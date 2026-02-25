@@ -16,12 +16,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Plus, Trash2, Pencil, CalendarIcon, Clock, Award, Loader2, CalendarDays, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, Pencil, CalendarIcon, Clock, Award, Loader2, CalendarDays, RefreshCw, X } from 'lucide-react'
 import { Calendar } from '@/components/ui/calendar'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -605,15 +605,28 @@ export default function EmpleadoDetallePage() {
 
       {/* Dialog: Registrar Vacacion */}
       <Dialog open={vacacionDialogOpen} onOpenChange={setVacacionDialogOpen}>
-        <DialogContent className="max-w-sm sm:max-w-md overflow-y-auto max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarDays className="h-5 w-5 text-spartan-primary" />
-              Registrar Vacación
-            </DialogTitle>
-          </DialogHeader>
+        <DialogContent hideCloseButton className="max-w-sm sm:max-w-md p-0 overflow-hidden">
 
-          <div className="space-y-4">
+          {/* Header fijo — sin colisión con nav del calendario */}
+          <div className="flex items-center justify-between px-5 py-4 border-b">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-spartan-primary" />
+              <span className="text-base font-semibold">Registrar Vacación</span>
+            </div>
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="h-7 w-7 rounded-md flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </DialogClose>
+          </div>
+
+          {/* Cuerpo con scroll propio */}
+          <div className="overflow-y-auto max-h-[calc(90vh-130px)] px-5 py-4 space-y-4">
+
             {/* Mode toggle */}
             <div className="flex rounded-lg border bg-muted/30 p-1 gap-1">
               <button
@@ -642,7 +655,7 @@ export default function EmpleadoDetallePage() {
               </button>
             </div>
 
-            {/* Calendar */}
+            {/* Calendario — sin bordes extra, el componente ya tiene estilo */}
             <div className="flex justify-center rounded-xl border bg-card shadow-sm">
               {vMode === 'single' ? (
                 <Calendar
@@ -659,29 +672,29 @@ export default function EmpleadoDetallePage() {
               )}
             </div>
 
-            {/* Summary chip */}
+            {/* Resumen de fechas seleccionadas */}
             {vacHasDate && (
               <div className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm',
+                'flex items-start gap-2 px-3 py-2.5 rounded-lg border text-sm',
                 vDiasHabiles
                   ? 'bg-blue-50 border-blue-200 text-blue-700'
                   : 'bg-amber-50 border-amber-200 text-amber-700',
               )}>
-                <CalendarDays className="h-4 w-4 shrink-0" />
+                <CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
                   {vDiasHabiles ? (
                     <>
                       <strong>{vDiasHabiles} días hábiles</strong>
                       {vMode === 'single' && vSingleDate && (
-                        <> — {format(vSingleDate, "dd 'de' MMMM yyyy", { locale: es })}</>
+                        <> — {format(vSingleDate, "EEEE dd 'de' MMMM yyyy", { locale: es })}</>
                       )}
                       {vMode === 'range' && vRange.from && vRange.to && (
-                        <> — {format(vRange.from, 'dd MMM', { locale: es })} al {format(vRange.to, "dd MMM yyyy", { locale: es })}</>
+                        <> — del {format(vRange.from, "dd 'de' MMM", { locale: es })} al {format(vRange.to, "dd 'de' MMM yyyy", { locale: es })}</>
                       )}
                     </>
                   ) : (
                     vMode === 'range' && vRange.from && !vRange.to
-                      ? 'Selecciona la fecha de fin del rango'
+                      ? <>Inicio: <strong>{format(vRange.from, "dd 'de' MMMM", { locale: es })}</strong> — selecciona la fecha de fin</>
                       : 'Calculando días hábiles...'
                   )}
                 </span>
@@ -690,23 +703,24 @@ export default function EmpleadoDetallePage() {
 
             {/* Motivo */}
             <div>
-              <Label>Motivo / Observaciones</Label>
+              <Label className="text-sm font-medium">Motivo / Observaciones</Label>
               <Textarea
                 value={vMotivo}
                 onChange={(e) => setVMotivo(e.target.value)}
                 placeholder="Opcional — ej: Vacación anual, descanso médico..."
-                className="resize-none"
+                className="resize-none mt-1.5"
                 rows={2}
               />
             </div>
 
             {/* Autorizado por */}
             <div>
-              <Label>Autorizado Por</Label>
+              <Label className="text-sm font-medium">Autorizado Por</Label>
               <Input
                 value={vAutorizado}
                 onChange={(e) => setVAutorizado(e.target.value)}
-                placeholder="Opcional — nombre del responsable"
+                placeholder="Nombre del responsable (opcional)"
+                className="mt-1.5"
               />
             </div>
 
@@ -719,7 +733,7 @@ export default function EmpleadoDetallePage() {
                   : 'bg-red-50 border-red-200 text-red-700',
               )}>
                 <span className="flex-1">
-                  Saldo resultante tras registrar:{' '}
+                  Saldo resultante:{' '}
                   <strong className="text-base">{formatNumber(saldoPreview)} días</strong>
                 </span>
                 {saldoPreview < 0 && (
@@ -729,7 +743,8 @@ export default function EmpleadoDetallePage() {
             )}
           </div>
 
-          <DialogFooter className="gap-2">
+          {/* Footer fijo */}
+          <div className="flex justify-end gap-2 px-5 py-3 border-t bg-muted/20">
             <Button variant="outline" onClick={() => setVacacionDialogOpen(false)}>Cancelar</Button>
             <Button
               onClick={handleAddVacacion}
@@ -738,7 +753,8 @@ export default function EmpleadoDetallePage() {
             >
               {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : 'Guardar'}
             </Button>
-          </DialogFooter>
+          </div>
+
         </DialogContent>
       </Dialog>
     </div>
