@@ -62,6 +62,8 @@ export default function EmpleadoDetallePage() {
   const [periodoDialogOpen, setPeriodoDialogOpen] = useState(false)
   const [vacacionDialogOpen, setVacacionDialogOpen] = useState(false)
   const [editingPeriodo, setEditingPeriodo] = useState<PeriodoVacacion | null>(null)
+  const [editingVacacion, setEditingVacacion] = useState<VacacionTomada | null>(null)
+  const [confirmEditOpen, setConfirmEditOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // Periodo form state
@@ -177,7 +179,7 @@ export default function EmpleadoDetallePage() {
     fetchEmpleado()
   }
 
-  async function handleAddVacacion() {
+  async function handleSaveVacacion() {
     let fechaDesde: string | null = null
     let fechaHasta: string | null = null
 
@@ -192,16 +194,23 @@ export default function EmpleadoDetallePage() {
     if (!fechaDesde) return
 
     setSaving(true)
-    await supabase.from('vacaciones_tomadas').insert({
-      empleado_id: id,
+    const payload = {
       fecha_desde: fechaDesde,
       fecha_hasta: fechaHasta,
       dias_habiles: parseFloat(vDiasHabiles) || 0,
       motivo: vMotivo || null,
       autorizado_por: vAutorizado || null,
-    })
+    }
+
+    if (editingVacacion) {
+      await supabase.from('vacaciones_tomadas').update(payload).eq('id', editingVacacion.id)
+    } else {
+      await supabase.from('vacaciones_tomadas').insert({ empleado_id: id, ...payload })
+    }
     setSaving(false)
     setVacacionDialogOpen(false)
+    setConfirmEditOpen(false)
+    setEditingVacacion(null)
     resetVacacionForm()
     fetchEmpleado()
   }
@@ -254,6 +263,7 @@ export default function EmpleadoDetallePage() {
     setVDiasHabiles('')
     setVMotivo('')
     setVAutorizado('')
+    setEditingVacacion(null)
   }
 
   function openPeriodoDialog() {
@@ -266,7 +276,31 @@ export default function EmpleadoDetallePage() {
     setVacacionDialogOpen(true)
   }
 
-  const saldoPreview = vDiasHabiles ? saldo - parseFloat(vDiasHabiles) : saldo
+  function openEditVacacionDialog(v: VacacionTomada) {
+    const desde = v.fecha_desde ? new Date(v.fecha_desde + 'T00:00:00') : undefined
+    const hasta = v.fecha_hasta ? new Date(v.fecha_hasta + 'T00:00:00') : undefined
+
+    if (desde && (!hasta || v.fecha_desde === v.fecha_hasta)) {
+      setVMode('single')
+      setVSingleDate(desde)
+      setVRange({ from: undefined, to: undefined })
+    } else {
+      setVMode('range')
+      setVRange({ from: desde, to: hasta })
+      setVSingleDate(undefined)
+    }
+    setVDiasHabiles((v.dias_habiles ?? '').toString())
+    setVMotivo(v.motivo || '')
+    setVAutorizado(v.autorizado_por || '')
+    setEditingVacacion(v)
+    setVacacionDialogOpen(true)
+  }
+
+  const saldoPreview = vDiasHabiles
+    ? editingVacacion
+      ? saldo + Number(editingVacacion.dias_habiles) - parseFloat(vDiasHabiles)
+      : saldo - parseFloat(vDiasHabiles)
+    : saldo
 
   // helpers to check if any date is selected in vacation form
   const vacHasDate = vMode === 'single' ? !!vSingleDate : !!vRange.from
@@ -483,23 +517,28 @@ export default function EmpleadoDetallePage() {
                         <TableCell className="text-center font-semibold">{formatNumber(Number(v.dias_habiles))}</TableCell>
                         <TableCell className="text-sm">{v.autorizado_por || '-'}</TableCell>
                         <TableCell>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm"><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Eliminar vacación?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Se eliminará la vacación del {formatDate(v.fecha_desde)} ({formatNumber(Number(v.dias_habiles))} días).
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteVacacion(v.id)}>Eliminar</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEditVacacionDialog(v)}>
+                              <Pencil className="h-4 w-4 text-blue-500" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Eliminar vacación?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Se eliminará la vacación del {formatDate(v.fecha_desde)} ({formatNumber(Number(v.dias_habiles))} días).
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteVacacion(v.id)}>Eliminar</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -603,15 +642,15 @@ export default function EmpleadoDetallePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog: Registrar Vacacion */}
-      <Dialog open={vacacionDialogOpen} onOpenChange={setVacacionDialogOpen}>
+      {/* Dialog: Registrar / Editar Vacacion */}
+      <Dialog open={vacacionDialogOpen} onOpenChange={(open) => { if (!open) { setVacacionDialogOpen(false); resetVacacionForm() } else setVacacionDialogOpen(true) }}>
         <DialogContent hideCloseButton className="max-w-sm sm:max-w-md p-0 overflow-hidden">
 
           {/* Header fijo — sin colisión con nav del calendario */}
           <div className="flex items-center justify-between px-5 py-4 border-b">
             <div className="flex items-center gap-2">
               <CalendarDays className="h-5 w-5 text-spartan-primary" />
-              <span className="text-base font-semibold">Registrar Vacación</span>
+              <span className="text-base font-semibold">{editingVacacion ? 'Editar Vacación' : 'Registrar Vacación'}</span>
             </div>
             <DialogClose asChild>
               <button
@@ -747,16 +786,65 @@ export default function EmpleadoDetallePage() {
           <div className="flex justify-end gap-2 px-5 py-3 border-t bg-muted/20">
             <Button variant="outline" onClick={() => setVacacionDialogOpen(false)}>Cancelar</Button>
             <Button
-              onClick={handleAddVacacion}
+              onClick={() => editingVacacion ? setConfirmEditOpen(true) : handleSaveVacacion()}
               disabled={saving || !vacHasDate || !vDiasHabiles}
               className="bg-spartan-primary hover:bg-spartan-primary/90"
             >
-              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : 'Guardar'}
+              {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Guardando...</> : editingVacacion ? 'Actualizar' : 'Guardar'}
             </Button>
           </div>
 
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog: Confirmación doble para editar vacación */}
+      <AlertDialog open={confirmEditOpen} onOpenChange={setConfirmEditOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Confirmar cambios en la vacación?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Estás a punto de modificar este registro. Verifica que los datos sean correctos:</p>
+                <div className="rounded-lg border bg-muted/40 p-3 space-y-1">
+                  {editingVacacion && (
+                    <p className="text-muted-foreground">
+                      <span className="font-medium text-foreground">Antes: </span>
+                      {formatDate(editingVacacion.fecha_desde)}
+                      {editingVacacion.fecha_hasta && editingVacacion.fecha_hasta !== editingVacacion.fecha_desde && (
+                        <> → {formatDate(editingVacacion.fecha_hasta)}</>
+                      )}{' '}
+                      ({formatNumber(Number(editingVacacion.dias_habiles))} días)
+                    </p>
+                  )}
+                  <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground">Después: </span>
+                    {vMode === 'single' && vSingleDate
+                      ? format(vSingleDate, "dd/MM/yyyy", { locale: es })
+                      : vRange.from
+                        ? `${format(vRange.from, "dd/MM/yyyy", { locale: es })}${vRange.to ? ` → ${format(vRange.to, "dd/MM/yyyy", { locale: es })}` : ''}`
+                        : '—'
+                    }{' '}
+                    ({vDiasHabiles} días hábiles)
+                  </p>
+                  <p className="font-medium text-foreground pt-1">
+                    Saldo resultante: {formatNumber(saldoPreview)} días
+                  </p>
+                </div>
+                <p className="text-amber-600 font-medium">Esta acción actualizará el saldo de vacaciones del empleado.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmEditOpen(false)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSaveVacacion}
+              className="bg-spartan-primary hover:bg-spartan-primary/90"
+            >
+              {saving ? 'Guardando...' : 'Sí, confirmar cambios'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
