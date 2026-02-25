@@ -19,15 +19,16 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         months: 'flex flex-col',
         month: 'flex flex-col gap-3',
         month_caption: 'relative flex h-9 w-full items-center justify-center',
-        caption_label: 'text-sm font-semibold capitalize text-foreground pointer-events-none',
-        nav: 'absolute inset-0 flex items-center justify-between',
+        caption_label: 'text-sm font-semibold capitalize text-foreground',
+        // nav en flujo normal — solo los botones tienen absolute respecto a month_caption
+        nav: 'flex',
         button_previous: cn(
-          'h-7 w-7 rounded-md inline-flex items-center justify-center',
+          'absolute left-1 h-7 w-7 rounded-md inline-flex items-center justify-center',
           'text-muted-foreground hover:text-foreground hover:bg-accent',
           'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         ),
         button_next: cn(
-          'h-7 w-7 rounded-md inline-flex items-center justify-center',
+          'absolute right-1 h-7 w-7 rounded-md inline-flex items-center justify-center',
           'text-muted-foreground hover:text-foreground hover:bg-accent',
           'transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         ),
@@ -38,7 +39,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         // day = <td>: base sin estilos de rango; los modificadores los añaden
         day: 'relative h-9 w-9 p-0 text-center',
         day_button: cn(
-          'relative z-10 h-9 w-9 rounded-full text-sm font-normal transition-colors',
+          'h-9 w-9 rounded-full text-sm font-normal transition-colors',
           'hover:bg-accent hover:text-accent-foreground',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           'disabled:pointer-events-none disabled:opacity-30',
