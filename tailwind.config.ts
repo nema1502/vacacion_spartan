@@ -58,5 +58,12 @@ const config: Config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
+  safelist: [
+    // react-day-picker range classes — garantizado en producción
+    'bg-[#1a365d]/15',
+    'rounded-l-full',
+    'rounded-r-full',
+    'rounded-none',
+  ],
 }
 export default config

@@ -45,7 +45,7 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
           'aria-selected:bg-[#1a365d] aria-selected:text-white aria-selected:hover:bg-[#1a365d]/90 aria-selected:font-semibold',
         ),
         selected: '',
-        today: 'font-bold text-spartan-primary [&:not([aria-selected])]:underline [&:not([aria-selected])]:underline-offset-2',
+        today: 'font-bold [&:not([aria-selected])]:text-spartan-primary [&:not([aria-selected])]:underline [&:not([aria-selected])]:underline-offset-2',
         outside: 'text-muted-foreground/40 aria-selected:bg-[#1a365d]/50 aria-selected:text-white',
         disabled: 'opacity-30 pointer-events-none',
         // Estos se añaden al <td> según el modificador activo → Tailwind los detecta en build
