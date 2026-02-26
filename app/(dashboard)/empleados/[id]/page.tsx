@@ -78,7 +78,8 @@ export default function EmpleadoDetallePage() {
   const [vSingleDate, setVSingleDate] = useState<Date | undefined>(undefined)
   const [vRange, setVRange] = useState<DateRange>({ from: undefined, to: undefined })
   const [vDiasHabiles, setVDiasHabiles] = useState('')
-  const [vMotivo, setVMotivo] = useState('')
+  const [vMotivoSelect, setVMotivoSelect] = useState('')
+  const [vMotivo, setVMotivo] = useState('')   // texto libre cuando vMotivoSelect === 'OTRO'
   const [vAutorizado, setVAutorizado] = useState('')
 
   const fetchEmpleado = useCallback(async (forceRecalc = false) => {
@@ -194,11 +195,15 @@ export default function EmpleadoDetallePage() {
     if (!fechaDesde) return
 
     setSaving(true)
+    const motivoFinal = vMotivoSelect === 'OTRO'
+      ? vMotivo.trim() || null
+      : vMotivoSelect || null
+
     const payload = {
       fecha_desde: fechaDesde,
       fecha_hasta: fechaHasta,
       dias_habiles: parseFloat(vDiasHabiles) || 0,
-      motivo: vMotivo || null,
+      motivo: motivoFinal,
       autorizado_por: vAutorizado || null,
     }
 
@@ -256,11 +261,18 @@ export default function EmpleadoDetallePage() {
     setPeriodoDialogOpen(true)
   }
 
+  const MOTIVO_PREDEFINIDOS = new Set([
+    'VACACION COLECTIVA', 'VACACION CRONOGRAMA', 'VACACION VENTAS', 'VACACION SOLICITADA',
+    'TARDE', 'MEDIO DIA', 'SOLO SABADOS', 'SOLO VIERNES', 'SOLO LUNES',
+    'SOLICITUD SALUD', 'SOLICITUD DILIGENCIAS', 'VIAJE', 'CUMPLEAÑOS', 'JURADO ELECTORAL',
+  ])
+
   function resetVacacionForm() {
     setVMode('range')
     setVSingleDate(undefined)
     setVRange({ from: undefined, to: undefined })
     setVDiasHabiles('')
+    setVMotivoSelect('')
     setVMotivo('')
     setVAutorizado('')
     setEditingVacacion(null)
@@ -290,7 +302,17 @@ export default function EmpleadoDetallePage() {
       setVSingleDate(undefined)
     }
     setVDiasHabiles((v.dias_habiles ?? '').toString())
-    setVMotivo(v.motivo || '')
+    // Pre-fill motivo: detect if value is predefined or free text
+    if (!v.motivo) {
+      setVMotivoSelect('')
+      setVMotivo('')
+    } else if (MOTIVO_PREDEFINIDOS.has(v.motivo)) {
+      setVMotivoSelect(v.motivo)
+      setVMotivo('')
+    } else {
+      setVMotivoSelect('OTRO')
+      setVMotivo(v.motivo)
+    }
     setVAutorizado(v.autorizado_por || '')
     setEditingVacacion(v)
     setVacacionDialogOpen(true)
@@ -743,13 +765,45 @@ export default function EmpleadoDetallePage() {
             {/* Motivo */}
             <div>
               <Label className="text-sm font-medium">Motivo / Observaciones</Label>
-              <Textarea
-                value={vMotivo}
-                onChange={(e) => setVMotivo(e.target.value)}
-                placeholder="Opcional — ej: Vacación anual, descanso médico..."
-                className="resize-none mt-1.5"
-                rows={2}
-              />
+              <select
+                value={vMotivoSelect}
+                onChange={(e) => { setVMotivoSelect(e.target.value); if (e.target.value !== 'OTRO') setVMotivo('') }}
+                className="mt-1.5 flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">(Sin motivo / no especificado)</option>
+                <optgroup label="Tipo de vacación">
+                  <option value="VACACION COLECTIVA">Vacación colectiva (toda la empresa)</option>
+                  <option value="VACACION CRONOGRAMA">Vacación por cronograma</option>
+                  <option value="VACACION VENTAS">Vacación colectiva área ventas</option>
+                  <option value="VACACION SOLICITADA">Vacación solicitada individualmente</option>
+                </optgroup>
+                <optgroup label="Fraccionamiento">
+                  <option value="TARDE">Solo tardes</option>
+                  <option value="MEDIO DIA">Medio día</option>
+                  <option value="SOLO SABADOS">Solo sábados</option>
+                  <option value="SOLO VIERNES">Solo viernes</option>
+                  <option value="SOLO LUNES">Solo lunes</option>
+                </optgroup>
+                <optgroup label="Motivo personal">
+                  <option value="SOLICITUD SALUD">Salud (propio o familiar)</option>
+                  <option value="SOLICITUD DILIGENCIAS">Diligencias personales</option>
+                  <option value="VIAJE">Viaje / trámite</option>
+                  <option value="CUMPLEAÑOS">Cumpleaños / evento familiar</option>
+                </optgroup>
+                <optgroup label="Especiales">
+                  <option value="JURADO ELECTORAL">Jurado electoral</option>
+                  <option value="OTRO">Otro motivo…</option>
+                </optgroup>
+              </select>
+              {vMotivoSelect === 'OTRO' && (
+                <Input
+                  value={vMotivo}
+                  onChange={(e) => setVMotivo(e.target.value)}
+                  placeholder="Especificar motivo..."
+                  className="mt-2 animate-in fade-in-0 slide-in-from-top-1 duration-150"
+                  autoFocus
+                />
+              )}
             </div>
 
             {/* Autorizado por */}
