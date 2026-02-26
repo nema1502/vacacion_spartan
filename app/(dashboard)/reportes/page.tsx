@@ -86,7 +86,7 @@ export default function ReportesPage() {
         .from('vacaciones_tomadas')
         .select('*')
         .eq('empleado_id', emp.id)
-        .order('fecha_desde', { ascending: false }),
+        .order('fecha_desde', { ascending: true }),
     ])
     setEmpDetail({
       periodos: (periodos as PeriodoVacacion[]) ?? [],
