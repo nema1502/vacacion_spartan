@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { DayPicker } from 'react-day-picker'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
@@ -40,8 +40,8 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         dropdowns: 'flex items-center gap-1',
         dropdown_root: 'relative',
         dropdown: cn(
-          'appearance-none h-7 rounded-md border border-input bg-background',
-          'pl-2 pr-6 text-sm font-semibold text-foreground capitalize',
+          'h-7 rounded-md border border-input bg-background',
+          'pl-2 pr-2 text-sm font-semibold text-foreground capitalize',
           'cursor-pointer hover:bg-accent transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-ring',
         ),
@@ -72,17 +72,6 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
           orientation === 'left'
             ? <ChevronLeft className="h-4 w-4" />
             : <ChevronRight className="h-4 w-4" />,
-        // Icono decorativo para los dropdowns
-        DropdownNav: ({ children, ...rest }: React.HTMLAttributes<HTMLDivElement>) => (
-          <div {...rest} className="flex items-center gap-1">
-            {React.Children.map(children, (child) => (
-              <span className="relative inline-flex items-center">
-                {child}
-                <ChevronDown className="pointer-events-none absolute right-1 h-3 w-3 text-muted-foreground" />
-              </span>
-            ))}
-          </div>
-        ),
       }}
       {...props}
     />
