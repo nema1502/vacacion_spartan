@@ -131,8 +131,9 @@ export default function EmpleadoDetallePage() {
 
   useEffect(() => { fetchEmpleado() }, [fetchEmpleado])
 
-  // Auto-calculate dias habiles when vacation dates change
+  // Auto-calculate dias habiles ONLY when motivo is VACACION SOLICITADA
   useEffect(() => {
+    if (vMotivoSelect !== 'VACACION SOLICITADA') return
     if (vMode === 'single' && vSingleDate) {
       setVDiasHabiles(calcularDiasHabiles(vSingleDate, vSingleDate).toString())
     } else if (vMode === 'range' && vRange.from && vRange.to) {
@@ -140,7 +141,7 @@ export default function EmpleadoDetallePage() {
     } else {
       setVDiasHabiles('')
     }
-  }, [vMode, vSingleDate, vRange.from, vRange.to])
+  }, [vMode, vSingleDate, vRange.from, vRange.to, vMotivoSelect])
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -737,28 +738,44 @@ export default function EmpleadoDetallePage() {
             {vacHasDate && (
               <div className={cn(
                 'flex items-start gap-2 px-3 py-2.5 rounded-lg border text-sm',
-                vDiasHabiles
-                  ? 'bg-blue-50 border-blue-200 text-blue-700'
-                  : 'bg-amber-50 border-amber-200 text-amber-700',
+                vMode === 'range' && vRange.from && !vRange.to
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-blue-50 border-blue-200 text-blue-700',
               )}>
                 <CalendarDays className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>
-                  {vDiasHabiles ? (
-                    <>
-                      <strong>{vDiasHabiles} días hábiles</strong>
-                      {vMode === 'single' && vSingleDate && (
-                        <> — {format(vSingleDate, "EEEE dd 'de' MMMM yyyy", { locale: es })}</>
-                      )}
-                      {vMode === 'range' && vRange.from && vRange.to && (
-                        <> — del {format(vRange.from, "dd 'de' MMM", { locale: es })} al {format(vRange.to, "dd 'de' MMM yyyy", { locale: es })}</>
-                      )}
-                    </>
-                  ) : (
-                    vMode === 'range' && vRange.from && !vRange.to
-                      ? <>Inicio: <strong>{format(vRange.from, "dd 'de' MMMM", { locale: es })}</strong> — selecciona la fecha de fin</>
-                      : 'Calculando días hábiles...'
+                  {vMode === 'single' && vSingleDate && (
+                    format(vSingleDate, "EEEE dd 'de' MMMM yyyy", { locale: es })
+                  )}
+                  {vMode === 'range' && vRange.from && vRange.to && (
+                    <>Del {format(vRange.from, "dd 'de' MMM", { locale: es })} al {format(vRange.to, "dd 'de' MMM yyyy", { locale: es })}</>
+                  )}
+                  {vMode === 'range' && vRange.from && !vRange.to && (
+                    <>Inicio: <strong>{format(vRange.from, "dd 'de' MMMM", { locale: es })}</strong> — selecciona la fecha de fin</>
                   )}
                 </span>
+              </div>
+            )}
+
+            {/* Días hábiles (siempre editable, auto-calc solo para VACACION SOLICITADA) */}
+            {vacHasDate && (
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <Label className="text-sm font-medium">Días Hábiles</Label>
+                  {vMotivoSelect === 'VACACION SOLICITADA' && vDiasHabiles && (
+                    <span className="text-xs text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                      Auto-calculado — puedes modificarlo
+                    </span>
+                  )}
+                </div>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={vDiasHabiles}
+                  onChange={(e) => setVDiasHabiles(e.target.value)}
+                  placeholder="Ej: 5"
+                />
               </div>
             )}
 
