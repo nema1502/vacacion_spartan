@@ -511,12 +511,24 @@ export default function ReportesPage() {
 
       {/* Detail Dialog */}
       <Dialog open={!!selectedEmp} onOpenChange={(open) => { if (!open) { setSelectedEmp(null); setEmpDetail(null) } }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden flex flex-col max-h-[90vh]">
+          {/* Header fijo con título y botones */}
+          <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
             <DialogTitle className="text-spartan-primary text-lg">
               Reporte Detallado &mdash; {selectedEmp?.nombre_completo}
             </DialogTitle>
-          </DialogHeader>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => { setSelectedEmp(null); setEmpDetail(null) }}>
+                Cerrar
+              </Button>
+              <Button size="sm" onClick={exportDetailPDF} className="bg-spartan-primary hover:bg-spartan-primary/90" disabled={!empDetail || detailLoading}>
+                <FileDown className="mr-2 h-4 w-4" /> Exportar PDF Individual
+              </Button>
+            </div>
+          </div>
+
+          {/* Cuerpo scrollable */}
+          <div className="overflow-y-auto px-6 py-4">
 
           {detailLoading ? (
             <div className="flex items-center justify-center py-16 gap-3">
@@ -661,18 +673,11 @@ export default function ReportesPage() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => { setSelectedEmp(null); setEmpDetail(null) }}>
-                  Cerrar
-                </Button>
-                <Button onClick={exportDetailPDF} className="bg-spartan-primary hover:bg-spartan-primary/90">
-                  <FileDown className="mr-2 h-4 w-4" /> Exportar PDF Individual
-                </Button>
-              </div>
+              {/* Actions — hidden, buttons are now in the fixed header */}
 
             </div>
           ) : null}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
